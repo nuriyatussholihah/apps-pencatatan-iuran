@@ -33,6 +33,7 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
     const [editData, setEditData] = useState<Partial<Iuran>>({});
     const [loading, setLoading] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
     const handleEditClick = (item: Iuran) => {
         setEditingId(item.id);
@@ -160,8 +161,13 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
-        if (!confirm(`Yakin ingin menghapus ${selectedIds.size} data yang dipilih?`)) return;
 
+        // Show modal and wait for confirmation via another function
+        setShowBulkDeleteConfirm(true);
+    };
+
+    const confirmBulkDelete = async () => {
+        setShowBulkDeleteConfirm(false);
         const toastId = toast.loading(`Menghapus ${selectedIds.size} data...`);
         try {
             const res = await fetch('/api/iuran/bulk-delete', {
@@ -361,6 +367,14 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                 message="Apakah Anda yakin ingin menghapus data iuran ini? Data yang dihapus tidak dapat dikembalikan."
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteId(null)}
+            />
+
+            <ConfirmModal
+                isOpen={showBulkDeleteConfirm}
+                title="Hapus Banyak Data"
+                message={`Apakah Anda yakin ingin menghapus ${selectedIds.size} data terpilih secara massal? Aksi ini tidak dapat dibatalkan.`}
+                onConfirm={confirmBulkDelete}
+                onCancel={() => setShowBulkDeleteConfirm(false)}
             />
         </div>
     );
