@@ -10,10 +10,9 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
     const [jumlah, setJumlah] = useState('');
     const [status, setStatus] = useState<'Belum' | 'Lunas'>('Belum');
     const [linkBukti, setLinkBukti] = useState('');
-
     const [inputMode, setInputMode] = useState<'manual' | 'salin'>('manual');
     const [sourceYear, setSourceYear] = useState(new Date().getFullYear() - 1 + '');
-    const [targetYear, setTargetYear] = useState(new Date().getFullYear() + '');
+    const [targetYear, setTargetYear] = useState(new Date().toISOString().split('T')[0]);
     const [defaultJumlah, setDefaultJumlah] = useState('');
 
     const [loading, setLoading] = useState(false);
@@ -172,8 +171,8 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
                             <input type="number" className="input" placeholder="Contoh: 2026" value={sourceYear} onChange={(e) => setSourceYear(e.target.value)} required />
                         </div>
                         <div className="input-group" style={{ marginBottom: 0 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Target Salinan (Tahun Baru)</label>
-                            <input type="number" className="input" placeholder="Contoh: 2027" value={targetYear} onChange={(e) => setTargetYear(e.target.value)} required />
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Tanggal Iuran (Tahun Baru)</label>
+                            <input type="date" className="input" value={targetYear} onChange={(e) => setTargetYear(e.target.value)} required />
                         </div>
                         <div className="input-group" style={{ marginBottom: 0 }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Atur Nominal (Rp)</label>

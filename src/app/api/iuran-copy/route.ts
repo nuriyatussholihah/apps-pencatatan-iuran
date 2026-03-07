@@ -21,18 +21,20 @@ export async function POST(request: Request) {
         const rows = response.data.values || [];
         const dataRows = rows.slice(1); // skip header
 
-        // Cari semua nama unik dari sourceYear
-        const uniqueNames = new Set<string>();
+        // Cari semua nama unik dan tanggal aslinya dari sourceYear
+        const nameToDateMap = new Map<string, string>();
         dataRows.forEach(row => {
             const tahun = row[2] || '';
             const namaKk = row[3] || '';
             // filter by source year, and ensure name is not empty
             if (tahun.startsWith(sourceYear) && namaKk) {
-                uniqueNames.add(namaKk);
+                if (!nameToDateMap.has(namaKk)) {
+                    nameToDateMap.set(namaKk, tahun);
+                }
             }
         });
 
-        if (uniqueNames.size === 0) {
+        if (nameToDateMap.size === 0) {
             return NextResponse.json({ success: false, error: `Tidak ada data keluarga di tahun ${sourceYear}` }, { status: 404 });
         }
 
@@ -40,10 +42,16 @@ export async function POST(request: Request) {
         const newRows: any[][] = [];
         const parsedJumlah = Number(defaultJumlah || 0);
 
-        Array.from(uniqueNames).forEach(namaKk => {
+        nameToDateMap.forEach((oldDate, namaKk) => {
             const timestamp = new Date().toISOString();
             const id = crypto.randomUUID();
-            newRows.push([id, timestamp, targetYear, namaKk, parsedJumlah, 'Belum', '']);
+
+            // Use the exact date provided in the 'targetYear' input
+            const newDate = targetYear;
+
+            const notes = `(Salinan dari ${sourceYear})`;
+
+            newRows.push([id, timestamp, newDate, namaKk, parsedJumlah, 'Belum', notes]);
         });
 
         // Append semua baris baru sekaligus

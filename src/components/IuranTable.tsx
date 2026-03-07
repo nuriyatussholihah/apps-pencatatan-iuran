@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Edit2, Trash2, Check, X } from 'lucide-react';
+import { Edit2, Trash2, Check, X, Copy } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
 export type Iuran = {
@@ -13,7 +13,8 @@ export type Iuran = {
     linkBukti: string;
 };
 
-export default function IuranTable({ data, isAdmin, onRefresh }: { data: Iuran[], isAdmin?: boolean, onRefresh?: () => void }) {
+export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh }: { data: Iuran[], notulensiYearHost?: string, isAdmin?: boolean, onRefresh?: () => void }) {
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const formatTanggal = (dateString: string) => {
         if (!dateString) return '-';
         try {
@@ -93,11 +94,144 @@ export default function IuranTable({ data, isAdmin, onRefresh }: { data: Iuran[]
         }
     };
 
+    const handleDuplicate = async (item: Iuran) => {
+        const toastId = toast.loading('Menduplikasi data...');
+        try {
+            // Remove the old ID to let backend generate a new one
+            const { id, timestamp, ...dataToDuplicate } = item;
+
+            const res = await fetch('/api/iuran', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToDuplicate)
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success('Data berhasil diduplikasi!', { id: toastId });
+                if (onRefresh) onRefresh();
+            } else {
+                toast.error(result.error || 'Gagal duplikasi data', { id: toastId });
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Error duplikasi data', { id: toastId });
+        }
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(new Set(data.map(item => item.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleSelectRow = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleBulkUpdate = async (status: 'Lunas' | 'Belum') => {
+        if (selectedIds.size === 0) return;
+
+        const toastId = toast.loading(`Mengubah ${selectedIds.size} data menjadi ${status}...`);
+        try {
+            const res = await fetch('/api/iuran/bulk-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: Array.from(selectedIds), status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success(result.message, { id: toastId });
+                setSelectedIds(new Set());
+                if (onRefresh) onRefresh();
+            } else {
+                toast.error(result.error || 'Gagal update massal', { id: toastId });
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Error update massal', { id: toastId });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Yakin ingin menghapus ${selectedIds.size} data yang dipilih?`)) return;
+
+        const toastId = toast.loading(`Menghapus ${selectedIds.size} data...`);
+        try {
+            const res = await fetch('/api/iuran/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: Array.from(selectedIds) })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success(result.message, { id: toastId });
+                setSelectedIds(new Set());
+                if (onRefresh) onRefresh();
+            } else {
+                toast.error(result.error || 'Gagal hapus massal', { id: toastId });
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Error hapus massal', { id: toastId });
+        }
+    };
+
+    const totalLunas = data.filter(i => i.status === 'Lunas').length;
+    const totalBelum = data.filter(i => i.status === 'Belum').length;
+    const totalDana = data.filter(i => i.status === 'Lunas').reduce((acc, curr) => acc + curr.jumlah, 0);
+
     return (
         <div className="table-container fade-in">
+            {isAdmin && data.length > 0 && (
+                <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--card-bg)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.size === data.length && data.length > 0}
+                            onChange={handleSelectAll}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        Pilih Semua ({selectedIds.size})
+                    </label>
+
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => handleBulkUpdate('Lunas')}
+                            disabled={selectedIds.size === 0}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+                        >
+                            Tandai Lunas
+                        </button>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => handleBulkUpdate('Belum')}
+                            disabled={selectedIds.size === 0}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+                        >
+                            Tandai Belum
+                        </button>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={handleBulkDelete}
+                            disabled={selectedIds.size === 0}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: 'var(--error)', borderColor: 'var(--error)', opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+                        >
+                            Hapus Terpilih
+                        </button>
+                    </div>
+                </div>
+            )}
             <table>
                 <thead>
                     <tr>
+                        {isAdmin && <th style={{ width: '40px', textAlign: 'center' }}>Pilih</th>}
                         <th>No</th>
                         <th>Nama KK</th>
                         <th>Tanggal</th>
@@ -117,7 +251,17 @@ export default function IuranTable({ data, isAdmin, onRefresh }: { data: Iuran[]
                         const isEditing = editingId === item.id;
 
                         return (
-                            <tr key={item.id}>
+                            <tr key={item.id} style={{ background: selectedIds.has(item.id) ? 'rgba(16, 185, 129, 0.05)' : '' }}>
+                                {isAdmin && (
+                                    <td style={{ textAlign: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(item.id)}
+                                            onChange={() => handleSelectRow(item.id)}
+                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                        />
+                                    </td>
+                                )}
                                 <td>{index + 1}</td>
 
                                 {isEditing ? (
@@ -172,6 +316,9 @@ export default function IuranTable({ data, isAdmin, onRefresh }: { data: Iuran[]
                                                     <button onClick={() => handleEditClick(item)} className="btn btn-secondary" style={{ padding: '0', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit">
                                                         <Edit2 size={16} />
                                                     </button>
+                                                    <button onClick={() => handleDuplicate(item)} className="btn btn-secondary" style={{ padding: '0', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', borderColor: 'var(--primary)' }} title="Duplikasi">
+                                                        <Copy size={16} />
+                                                    </button>
                                                     <button onClick={() => setDeleteId(item.id)} className="btn btn-secondary" style={{ padding: '0', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--error)', borderColor: 'var(--error)' }} title="Hapus">
                                                         <Trash2 size={16} />
                                                     </button>
@@ -184,6 +331,28 @@ export default function IuranTable({ data, isAdmin, onRefresh }: { data: Iuran[]
                         );
                     })}
                 </tbody>
+                {data.length > 0 && (
+                    <tfoot style={{ background: 'var(--card-bg)', fontWeight: 600, borderTop: '2px solid var(--border)' }}>
+                        <tr>
+                            <td colSpan={isAdmin ? 3 : 2} style={{ padding: '1rem' }}>
+                                <div style={{ marginBottom: '4px' }}>Total Keluarga (KK): <span style={{ color: 'var(--primary)' }}>{data.length}</span></div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 500 }}>
+                                    Lunas: {totalLunas} | Belum: {totalBelum}
+                                </div>
+                            </td>
+                            <td colSpan={2} style={{ padding: '1rem', verticalAlign: 'top' }}>
+                                <div style={{ marginBottom: '4px' }}>Total Dana Terkumpul:</div>
+                                <div style={{ fontSize: '1.25rem', color: 'var(--foreground)' }}>Rp {totalDana.toLocaleString('id-ID')}</div>
+                            </td>
+                            <td colSpan={isAdmin ? 3 : 2} style={{ padding: '1rem', verticalAlign: 'top' }}>
+                                <div style={{ marginBottom: '4px' }}>Tuan Rumah:</div>
+                                <div style={{ color: 'var(--foreground)', fontWeight: 500 }}>
+                                    {notulensiYearHost ? notulensiYearHost : <span style={{ color: 'var(--muted)', fontStyle: 'italic', fontWeight: 'normal' }}>Belum ada data (tambah di tab Notulensi)</span>}
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                )}
             </table>
 
             <ConfirmModal

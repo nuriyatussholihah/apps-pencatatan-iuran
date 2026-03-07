@@ -218,6 +218,10 @@ export default function Dashboard() {
 
   const saldoAkhir = totalPemasukan - totalPengeluaran;
 
+  const currentHost = displayNotulensi.length > 0
+    ? displayNotulensi[0].tuanRumah // Terakhir/Terkini dari tahun tersebut
+    : undefined;
+
   return (
     <main className="container" style={{ animation: 'fadeIn 0.5s ease' }}>
       <header className="mb-8 flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '1rem' }}>
@@ -365,7 +369,7 @@ export default function Dashboard() {
             ) : iuranView === 'checklist' ? (
               <IuranChecklist data={displayIuran} isAdmin={isAdmin} onQuickUpdate={handleQuickUpdateStatus} />
             ) : (
-              <IuranTable data={displayIuran} isAdmin={isAdmin} onRefresh={fetchData} />
+              <IuranTable data={displayIuran} notulensiYearHost={currentHost} isAdmin={isAdmin} onRefresh={fetchData} />
             )}
           </div>
         )}
