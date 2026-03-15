@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 
 export default function PengeluaranForm({ isOpen, onSuccess }: { isOpen: boolean, onSuccess: () => void }) {
     const [tahun, setTahun] = useState(new Date().getFullYear().toString());
+    const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
     const [keterangan, setKeterangan] = useState('Diserahkan ke Tuan Rumah');
     const [jumlah, setJumlah] = useState('');
 
@@ -16,6 +17,7 @@ export default function PengeluaranForm({ isOpen, onSuccess }: { isOpen: boolean
         if (isOpen) {
             setRender(true);
             setTahun(new Date().getFullYear().toString());
+            setTanggal(new Date().toISOString().split('T')[0]);
             setKeterangan('Diserahkan ke Tuan Rumah');
             setJumlah('');
         }
@@ -38,6 +40,7 @@ export default function PengeluaranForm({ isOpen, onSuccess }: { isOpen: boolean
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tahun,
+                    tanggal,
                     keterangan,
                     jumlah: parseInt(jumlah.replace(/[^0-9]/g, '')) || 0,
                 })
@@ -75,6 +78,11 @@ export default function PengeluaranForm({ isOpen, onSuccess }: { isOpen: boolean
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Tanggal Pengeluaran</label>
+                    <input type="date" className="input" value={tanggal} onChange={(e) => { setTanggal(e.target.value); if (e.target.value) setTahun(new Date(e.target.value).getFullYear().toString()); }} required />
+                </div>
+
                 <div className="input-group" style={{ marginBottom: 0 }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Tahun Iuran Berlangsung</label>
                     <input type="number" className="input" value={tahun} onChange={(e) => setTahun(e.target.value)} required />

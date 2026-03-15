@@ -27,7 +27,20 @@ export default function PengeluaranTable({ data, isAdmin, onRefresh }: { data: P
 
     const handleEditClick = (item: Pengeluaran) => {
         setEditingId(item.id);
-        setEditData(item);
+        // Format timestamp to YYYY-MM-DD for the date input
+        let formattedTimestamp = item.timestamp;
+        try {
+            if (item.timestamp) {
+                const d = new Date(item.timestamp);
+                if (!isNaN(d.getTime())) {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    formattedTimestamp = `${y}-${m}-${day}`;
+                }
+            }
+        } catch {}
+        setEditData({ ...item, timestamp: formattedTimestamp });
     };
 
     const handleCancelEdit = () => {
@@ -113,7 +126,7 @@ export default function PengeluaranTable({ data, isAdmin, onRefresh }: { data: P
                                 {isEditing ? (
                                     <>
                                         <td style={{ verticalAlign: 'middle' }}><input type="text" className="input" style={{ padding: '0.4rem', minWidth: '150px', marginBottom: 0 }} value={editData.keterangan || ''} onChange={(e) => setEditData({ ...editData, keterangan: e.target.value })} /></td>
-                                        <td style={{ verticalAlign: 'middle' }}><input type="number" className="input" style={{ padding: '0.4rem', minWidth: '100px', marginBottom: 0 }} value={editData.tahun || ''} onChange={(e) => setEditData({ ...editData, tahun: e.target.value })} placeholder="Tahun" /></td>
+                                        <td style={{ verticalAlign: 'middle' }}><input type="date" className="input" style={{ padding: '0.4rem', minWidth: '140px', marginBottom: 0 }} value={editData.timestamp || ''} onChange={(e) => setEditData({ ...editData, timestamp: e.target.value, tahun: e.target.value ? new Date(e.target.value).getFullYear().toString() : editData.tahun })} /></td>
                                         <td style={{ verticalAlign: 'middle' }}><input type="number" className="input" style={{ padding: '0.4rem', minWidth: '120px', marginBottom: 0 }} value={editData.jumlah || 0} onChange={(e) => setEditData({ ...editData, jumlah: parseInt(e.target.value) || 0 })} /></td>
                                     </>
                                 ) : (

@@ -35,14 +35,21 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { tahun, keterangan, jumlah } = body;
+        const { tahun, tanggal, keterangan, jumlah } = body;
 
         const parsedJumlah = typeof jumlah === 'string' ? Number(jumlah.replace(/[^0-9-]/g, '')) : Number(jumlah || 0);
         if (parsedJumlah < 0) {
             return NextResponse.json({ success: false, error: 'Jumlah tidak boleh minus' }, { status: 400 });
         }
 
-        const timestamp = new Date().toISOString();
+        // Gunakan tanggal dari form jika ada, jika tidak pakai waktu sekarang
+        let timestamp = new Date().toISOString();
+        if (tanggal) {
+            try {
+                const d = new Date(tanggal);
+                if (!isNaN(d.getTime())) timestamp = d.toISOString();
+            } catch {}
+        }
         const id = crypto.randomUUID();
 
         const sheets = getSheetsClient();
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, tahun, keterangan, jumlah } = body;
+        const { id, tahun, timestamp: bodyTimestamp, keterangan, jumlah } = body;
 
         if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
 
@@ -89,12 +96,21 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Data not found' }, { status: 404 });
         }
 
-        const fullResponse = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: `Pengeluaran_Lebaran!B${rowIndex + 1}:B${rowIndex + 1}`,
-        });
-
-        const timestamp = fullResponse.data.values?.[0]?.[0] || new Date().toISOString();
+        // Gunakan timestamp dari body jika ada, jika tidak ambil dari sheet
+        let timestamp = bodyTimestamp || '';
+        if (!timestamp) {
+            const fullResponse = await sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `Pengeluaran_Lebaran!B${rowIndex + 1}:B${rowIndex + 1}`,
+            });
+            timestamp = fullResponse.data.values?.[0]?.[0] || new Date().toISOString();
+        } else {
+            // Jika timestamp berformat YYYY-MM-DD (dari date input), konversi ke ISO string
+            try {
+                const d = new Date(timestamp);
+                if (!isNaN(d.getTime())) timestamp = d.toISOString();
+            } catch {}
+        }
 
         await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
