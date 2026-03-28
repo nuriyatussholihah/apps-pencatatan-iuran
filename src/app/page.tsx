@@ -238,7 +238,11 @@ export default function Dashboard() {
           n.linkFoto || '-'
         ]),
         theme: 'striped',
-        styles: { fontSize: 9 }
+        styles: { fontSize: 9 },
+        columnStyles: {
+          2: { cellWidth: 85 }, // Catatan
+          3: { cellWidth: 35 }  // Link Dokumentasi
+        }
       });
     }
 
