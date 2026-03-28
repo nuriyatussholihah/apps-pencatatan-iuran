@@ -95,7 +95,7 @@ export default function NotulensiFormInline({ isOpen, onSuccess }: { isOpen: boo
 
                     <div className="input-group" style={{ marginBottom: 0 }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Catatan Pertemuan</label>
-                        <textarea className="input" placeholder="Tuliskan hasil diskusi, keputusan, atau ringkasan acara reuni..." value={catatan} onChange={(e) => setCatatan(e.target.value)} required style={{ minHeight: '135px', resize: 'vertical' }} />
+                        <textarea enterKeyHint="enter" className="input" placeholder="Tuliskan hasil diskusi, keputusan, atau ringkasan acara reuni..." value={catatan} onChange={(e) => setCatatan(e.target.value)} required style={{ minHeight: '135px', resize: 'vertical' }} />
                     </div>
                 </div>
 

@@ -163,7 +163,7 @@ export default function NotulensiCard({ data, isAdmin, onRefresh }: { data: Notu
                                                 <input type="text" className="input" placeholder="Keluarga..." value={editData.tuanRumah || ''} onChange={(e) => setEditData({ ...editData, tuanRumah: e.target.value })} />
                                             </div>
                                         </div>
-                                        <textarea className="input" rows={4} style={{ width: '100%', marginBottom: '1rem' }} value={editData.catatan || ''} onChange={(e) => setEditData({ ...editData, catatan: e.target.value })} />
+                                        <textarea enterKeyHint="enter" className="input" rows={4} style={{ width: '100%', marginBottom: '1rem' }} value={editData.catatan || ''} onChange={(e) => setEditData({ ...editData, catatan: e.target.value })} />
                                         <div>
                                             <input type="url" className="input" style={{ width: '100%' }} placeholder="Link Foto/Dokumentasi" value={editData.linkFoto || ''} onChange={(e) => setEditData({ ...editData, linkFoto: e.target.value })} />
                                         </div>
