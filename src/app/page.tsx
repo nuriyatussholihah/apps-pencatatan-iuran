@@ -230,11 +230,12 @@ export default function Dashboard() {
       doc.text("Catatan Pertemuan (Notulensi)", 14, startY);
       autoTable(doc, {
         startY: startY + 5,
-        head: [['Tahun', 'Tuan Rumah', 'Catatan']],
+        head: [['Tahun', 'Tuan Rumah', 'Catatan', 'Link Dokumentasi']],
         body: displayNotulensi.map(n => [
           n.tahun,
           n.tuanRumah || '-',
-          n.catatan
+          n.catatan,
+          n.linkFoto || '-'
         ]),
         theme: 'striped',
         styles: { fontSize: 9 }
