@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const [selectedYear, setSelectedYear] = useState<string>('Semua');
+  const [iuranSearchQuery, setIuranSearchQuery] = useState('');
 
   const [iuranData, setIuranData] = useState<Iuran[]>([]);
   const [notulensiData, setNotulensiData] = useState<Notulensi[]>([]);
@@ -111,9 +112,9 @@ export default function Dashboard() {
 
   const handleExportCSV = () => {
     let dataToExport: any[] = [];
-    if (activeTab === 'iuran') dataToExport = displayIuran;
-    else if (activeTab === 'notulensi') dataToExport = displayNotulensi;
-    else if (activeTab === 'pengeluaran') dataToExport = displayPengeluaran;
+    if (activeTab === 'iuran') dataToExport = baseIuran;
+    else if (activeTab === 'notulensi') dataToExport = baseNotulensi;
+    else if (activeTab === 'pengeluaran') dataToExport = basePengeluaran;
 
     if (dataToExport.length === 0) {
       toast.error('Tidak ada data untuk diekspor.');
@@ -195,9 +196,13 @@ export default function Dashboard() {
 
   // Filter data berdasarkan tahun
   const displayIuran = useMemo(() => {
-    if (selectedYear === 'Semua') return baseIuran;
-    return baseIuran.filter(item => item.tahun.startsWith(selectedYear));
-  }, [baseIuran, selectedYear]);
+    let result = selectedYear === 'Semua' ? baseIuran : baseIuran.filter(item => item.tahun.startsWith(selectedYear));
+    if (iuranSearchQuery.trim()) {
+      const lowerQ = iuranSearchQuery.toLowerCase();
+      result = result.filter(item => item.namaKk.toLowerCase().includes(lowerQ));
+    }
+    return result;
+  }, [baseIuran, selectedYear, iuranSearchQuery]);
 
   const displayNotulensi = useMemo(() => {
     if (selectedYear === 'Semua') return baseNotulensi;
@@ -323,6 +328,15 @@ export default function Dashboard() {
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-4">
                 <h2>Status Pembayaran</h2>
+
+                <input
+                  type="text"
+                  placeholder="Cari nama KK..."
+                  className="input"
+                  value={iuranSearchQuery}
+                  onChange={(e) => setIuranSearchQuery(e.target.value)}
+                  style={{ marginBottom: 0, padding: '0.4rem 0.8rem', minWidth: '200px', fontSize: '0.9rem', borderRadius: '8px' }}
+                />
 
                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 4px', overflow: 'hidden' }}>
                   <select
