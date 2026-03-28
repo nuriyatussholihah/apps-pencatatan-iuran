@@ -223,9 +223,9 @@ export default function Dashboard() {
 
   const saldoAkhir = totalPemasukan - totalPengeluaran;
 
-  const currentHost = displayNotulensi.length > 0
-    ? displayNotulensi[0].tuanRumah // Terakhir/Terkini dari tahun tersebut
-    : undefined;
+  const currentHost = selectedYear === 'Semua' 
+    ? '-' 
+    : (displayNotulensi.length > 0 ? displayNotulensi[0].tuanRumah : undefined);
 
   return (
     <main className="container" style={{ animation: 'fadeIn 0.5s ease' }}>
