@@ -9,8 +9,10 @@ import IuranFormInline from '@/components/IuranFormInline';
 import NotulensiFormInline from '@/components/NotulensiFormInline';
 import PengeluaranForm from '@/components/PengeluaranForm';
 import PengeluaranTable from '@/components/PengeluaranTable';
-import { Camera, Download, Settings, RefreshCw, Sun, Moon, Filter, MinusCircle } from 'lucide-react';
+import { Camera, Download, Settings, RefreshCw, Sun, Moon, Filter, MinusCircle, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface Pengeluaran {
   id: string;
@@ -155,6 +157,96 @@ export default function Dashboard() {
     toast.success(`Data ${activeTab} (${selectedYear}) berhasil didownload!`);
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const filterLabel = selectedYear === 'Semua' ? 'Keseluruhan' : `Tahun ${selectedYear}`;
+    
+    // Header
+    doc.setFontSize(16);
+    doc.text(`Laporan Keluarga - ${filterLabel}`, 14, 20);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Total Pemasukan: Rp ${totalPemasukan.toLocaleString('id-ID')}`, 14, 30);
+    doc.text(`Total Pengeluaran: Rp ${totalPengeluaran.toLocaleString('id-ID')}`, 14, 36);
+    doc.text(`Saldo Kas Kas Bersih: Rp ${saldoAkhir.toLocaleString('id-ID')}`, 14, 42);
+
+    let startY = 50;
+
+    // 1. Iuran Table (List yang bayar)
+    if (displayIuran.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Daftar Iuran", 14, startY);
+      autoTable(doc, {
+        startY: startY + 5,
+        head: [['No', 'Nama KK', 'Status', 'Jumlah', 'Tanggal/Tahun']],
+        body: displayIuran.map((i, idx) => [
+          idx + 1,
+          i.namaKk,
+          i.status,
+          `Rp ${i.jumlah.toLocaleString('id-ID')}`,
+          i.tahun
+        ]),
+        theme: 'striped',
+        styles: { fontSize: 9 }
+      });
+      startY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // 2. Pengeluaran Table
+    if (displayPengeluaran.length > 0) {
+      // Check if we need a new page
+      if (startY > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        startY = 20;
+      }
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Daftar Pengeluaran", 14, startY);
+      autoTable(doc, {
+        startY: startY + 5,
+        head: [['No', 'Keterangan', 'Jumlah', 'Tanggal/Tahun']],
+        body: displayPengeluaran.map((p, idx) => [
+          idx + 1,
+          p.keterangan,
+          `Rp ${p.jumlah.toLocaleString('id-ID')}`,
+          p.timestamp || p.tahun
+        ]),
+        theme: 'striped',
+        styles: { fontSize: 9 }
+      });
+      startY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // 3. Notulensi Table/List
+    if (displayNotulensi.length > 0) {
+      if (startY > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        startY = 20;
+      }
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Catatan Pertemuan (Notulensi)", 14, startY);
+      autoTable(doc, {
+        startY: startY + 5,
+        head: [['Tahun', 'Tuan Rumah', 'Catatan']],
+        body: displayNotulensi.map(n => [
+          n.tahun,
+          n.tuanRumah || '-',
+          n.catatan
+        ]),
+        theme: 'striped',
+        styles: { fontSize: 9 }
+      });
+    }
+
+    const today = new Date();
+    const formattedDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+    doc.save(`Laporan_Keluarga_${filterLabel.replace(' ', '_')}_${formattedDate}.pdf`);
+    toast.success('Laporan PDF berhasil diunduh!');
+  };
+
   const handleQuickUpdateStatus = async (id: string, currentStatus: 'Lunas' | 'Belum') => {
     const newStatus = currentStatus === 'Lunas' ? 'Belum' : 'Lunas';
     const toastId = toast.loading('Mengupdate status...');
@@ -247,6 +339,9 @@ export default function Dashboard() {
 
           {isAdmin ? (
             <div className="flex gap-2">
+              <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', background: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' }} onClick={handleExportPDF}>
+                <FileText size={16} /> Laporan PDF
+              </button>
               <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={handleExportCSV}>
                 <Download size={16} /> Data Sheets
               </button>
