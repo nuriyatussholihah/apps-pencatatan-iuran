@@ -147,7 +147,7 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
                         </div>
 
                         <div className="input-group" style={{ marginBottom: 0 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Jumlah (Rp)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Jumlah Total (Wajib + Seikhlasnya)</label>
                             <input type="number" className="input" placeholder="Contoh: 500000" value={jumlah} onChange={(e) => setJumlah(e.target.value)} required min="0" />
                         </div>
 
@@ -175,7 +175,7 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
                             <input type="date" className="input" value={targetYear} onChange={(e) => setTargetYear(e.target.value)} required />
                         </div>
                         <div className="input-group" style={{ marginBottom: 0 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Atur Nominal (Rp)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Atur Nominal Wajib Awal (Rp)</label>
                             <input type="number" className="input" placeholder="Contoh: 50000" value={defaultJumlah} onChange={(e) => setDefaultJumlah(e.target.value)} required min="0" />
                         </div>
                         <div style={{ gridColumn: '1 / -1', padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '8px', fontSize: '0.9rem' }}>
