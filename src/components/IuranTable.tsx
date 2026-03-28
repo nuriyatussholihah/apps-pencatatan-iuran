@@ -9,6 +9,7 @@ export type Iuran = {
     tahun: string;
     namaKk: string;
     jumlah: number;
+    donasi: number;
     status: 'Lunas' | 'Belum';
     linkBukti: string;
 };
@@ -191,6 +192,7 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
     const totalLunas = data.filter(i => i.status === 'Lunas').length;
     const totalBelum = data.filter(i => i.status === 'Belum').length;
     const totalDana = data.filter(i => i.status === 'Lunas').reduce((acc, curr) => acc + curr.jumlah, 0);
+    const totalDonasi = data.reduce((acc, curr) => acc + (curr.donasi || 0), 0);
 
     return (
         <div className="table-container fade-in">
@@ -242,6 +244,7 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                         <th>Nama KK</th>
                         <th>Tanggal</th>
                         <th>Jumlah Iuran</th>
+                        <th>Donasi</th>
                         <th>Status</th>
                         <th>Bukti</th>
                         {isAdmin && <th>Aksi</th>}
@@ -250,7 +253,7 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                 <tbody>
                     {data.length === 0 && (
                         <tr>
-                            <td colSpan={isAdmin ? 7 : 6} className="text-center">Belum ada data iuran</td>
+                            <td colSpan={isAdmin ? 8 : 7} className="text-center">Belum ada data iuran</td>
                         </tr>
                     )}
                     {data.map((item, index) => {
@@ -275,6 +278,7 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                                         <td style={{ verticalAlign: 'middle' }}><input type="text" className="input" style={{ padding: '0.4rem', minWidth: '120px', marginBottom: 0 }} value={editData.namaKk || ''} onChange={(e) => setEditData({ ...editData, namaKk: e.target.value })} /></td>
                                         <td style={{ verticalAlign: 'middle' }}><input type="date" className="input" style={{ padding: '0.4rem', minWidth: '135px', marginBottom: 0 }} value={editData.tahun || ''} onChange={(e) => setEditData({ ...editData, tahun: e.target.value })} /></td>
                                         <td style={{ verticalAlign: 'middle' }}><input type="number" className="input" style={{ padding: '0.4rem', minWidth: '100px', marginBottom: 0 }} value={editData.jumlah || 0} onChange={(e) => setEditData({ ...editData, jumlah: parseInt(e.target.value) || 0 })} /></td>
+                                        <td style={{ verticalAlign: 'middle' }}><input type="number" className="input" style={{ padding: '0.4rem', minWidth: '100px', marginBottom: 0 }} value={editData.donasi || 0} onChange={(e) => setEditData({ ...editData, donasi: parseInt(e.target.value) || 0 })} /></td>
                                         <td style={{ verticalAlign: 'middle' }}>
                                             <select className="input" style={{ padding: '0.4rem', minWidth: '90px', marginBottom: 0 }} value={editData.status || 'Belum'} onChange={(e) => setEditData({ ...editData, status: e.target.value as 'Lunas' | 'Belum' })}>
                                                 <option value="Belum">Belum</option>
@@ -288,6 +292,9 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                                         <td style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.namaKk}</td>
                                         <td>{formatTanggal(item.tahun)}</td>
                                         <td style={{ fontWeight: 500 }}>Rp {item.jumlah.toLocaleString('id-ID')}</td>
+                                        <td style={{ fontWeight: 500, color: item.donasi > 0 ? 'var(--primary)' : 'var(--muted)' }}>
+                                            {item.donasi > 0 ? `Rp ${item.donasi.toLocaleString('id-ID')}` : '-'}
+                                        </td>
                                         <td>
                                             <span className={`status-badge ${item.status === 'Lunas' ? 'status-lunas' : 'status-belum'}`}>
                                                 {item.status}
@@ -346,9 +353,13 @@ export default function IuranTable({ data, notulensiYearHost, isAdmin, onRefresh
                                     Lunas: {totalLunas} | Belum: {totalBelum}
                                 </div>
                             </td>
-                            <td colSpan={2} style={{ padding: '1rem', verticalAlign: 'top' }}>
+                            <td style={{ padding: '1rem', verticalAlign: 'top' }}>
                                 <div style={{ marginBottom: '4px' }}>Total Dana Terkumpul:</div>
-                                <div style={{ fontSize: '1.25rem', color: 'var(--foreground)' }}>Rp {totalDana.toLocaleString('id-ID')}</div>
+                                <div style={{ fontSize: '1.1rem', color: 'var(--foreground)' }}>Rp {totalDana.toLocaleString('id-ID')}</div>
+                            </td>
+                            <td style={{ padding: '1rem', verticalAlign: 'top' }}>
+                                <div style={{ marginBottom: '4px' }}>Total Donasi:</div>
+                                <div style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>Rp {totalDonasi.toLocaleString('id-ID')}</div>
                             </td>
                             <td colSpan={isAdmin ? 3 : 2} style={{ padding: '1rem', verticalAlign: 'top' }}>
                                 <div style={{ marginBottom: '4px' }}>Tuan Rumah:</div>

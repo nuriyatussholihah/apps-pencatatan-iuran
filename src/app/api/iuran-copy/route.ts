@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         // Ambil semua data iuran
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A:G',
+            range: 'Iuran_Lebaran!A:H',
         });
 
         const rows = response.data.values || [];
@@ -51,13 +51,13 @@ export async function POST(request: Request) {
 
             const notes = `(Salinan dari ${sourceYear})`;
 
-            newRows.push([id, timestamp, newDate, namaKk, parsedJumlah, 'Belum', notes]);
+            newRows.push([id, timestamp, newDate, namaKk, parsedJumlah, 'Belum', notes, 0]);
         });
 
         // Append semua baris baru sekaligus
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A:G',
+            range: 'Iuran_Lebaran!A:H',
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: newRows
