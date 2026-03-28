@@ -8,53 +8,65 @@ export async function GET() {
         const sheets = getSheetsClient();
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A:G', // Fetch all to include headers
+            range: 'Donasi_Lebaran!A:E', // A=ID, B=Timestamp, C=Tahun, D=Keterangan, E=Jumlah
         });
 
         const rows = response.data.values || [];
-        const dataRows = rows.slice(1); // skip header
+        const dataRows = rows.slice(1);
         const data = dataRows.map((row, i) => ({
             id: row[0] || `row-${i + 1}`,
             timestamp: row[1] || '',
             tahun: row[2] || '',
-            namaKk: row[3] || '',
+            keterangan: row[3] || '',
             jumlah: typeof row[4] === 'string' ? Number(row[4].replace(/[^0-9]/g, '')) : Number(row[4] || 0),
-            status: row[5] || 'Belum',
-            linkBukti: row[6] || ''
         }));
 
         return NextResponse.json({ success: true, data });
     } catch (error: any) {
-        console.error("GET /api/iuran ERROR:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (error.message?.includes('Unable to parse range')) {
+            return NextResponse.json({ success: true, data: [] });
+        }
+        console.error('GET /api/donasi ERROR:', error);
+        return NextResponse.json({ success: false, error: "Gagal mengambil data, pastikan sheet 'Donasi_Lebaran' sudah ada" }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { tahun, namaKk, jumlah, status, linkBukti } = body;
+        const { tanggal, keterangan, jumlah } = body;
 
         const parsedJumlah = typeof jumlah === 'string' ? Number(jumlah.replace(/[^0-9-]/g, '')) : Number(jumlah || 0);
         if (parsedJumlah < 0) {
             return NextResponse.json({ success: false, error: 'Jumlah tidak boleh minus' }, { status: 400 });
         }
 
-        const timestamp = new Date().toISOString();
+        let timestamp = new Date().toISOString();
+        if (tanggal) {
+            try {
+                const d = new Date(tanggal);
+                if (!isNaN(d.getTime())) timestamp = d.toISOString();
+            } catch {}
+        }
+
+        const tahun = new Date(timestamp).getFullYear().toString();
         const id = crypto.randomUUID();
 
         const sheets = getSheetsClient();
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A2:G',
+            range: 'Donasi_Lebaran!A2:E',
             valueInputOption: 'USER_ENTERED',
             requestBody: {
-                values: [[id, timestamp, tahun, namaKk, parsedJumlah, status, linkBukti || '']]
+                values: [[id, timestamp, tahun, keterangan, parsedJumlah]]
             }
         });
 
-        return NextResponse.json({ success: true, message: 'Data berhasil ditambahkan', data: { id, timestamp, tahun, namaKk, jumlah: parsedJumlah, status, linkBukti } });
+        return NextResponse.json({ success: true, message: 'Donasi berhasil dicatat' });
     } catch (error: any) {
+        if (error.message?.includes('Unable to parse range')) {
+            return NextResponse.json({ success: false, error: "Sheet 'Donasi_Lebaran' belum dibuat di Google Sheet Anda." }, { status: 404 });
+        }
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
@@ -62,19 +74,16 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, tahun, namaKk, jumlah, status, linkBukti } = body;
+        const { id, timestamp: bodyTimestamp, keterangan, jumlah } = body;
 
         if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
 
         const parsedJumlah = typeof jumlah === 'string' ? Number(jumlah.replace(/[^0-9-]/g, '')) : Number(jumlah || 0);
-        if (parsedJumlah < 0) {
-            return NextResponse.json({ success: false, error: 'Jumlah tidak boleh minus' }, { status: 400 });
-        }
 
         const sheets = getSheetsClient();
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A:G',
+            range: 'Donasi_Lebaran!A:A',
         });
 
         const rows = response.data.values || [];
@@ -84,19 +93,32 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Data not found' }, { status: 404 });
         }
 
-        const timestamp = rows[rowIndex][1] || new Date().toISOString();
-        const sheetRowNumber = rowIndex + 1; // +1 to convert 0-indexed to 1-indexed sheet row
+        let timestamp = bodyTimestamp || '';
+        if (!timestamp) {
+            const fullResponse = await sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `Donasi_Lebaran!B${rowIndex + 1}:B${rowIndex + 1}`,
+            });
+            timestamp = fullResponse.data.values?.[0]?.[0] || new Date().toISOString();
+        } else {
+            try {
+                const d = new Date(timestamp);
+                if (!isNaN(d.getTime())) timestamp = d.toISOString();
+            } catch {}
+        }
+
+        const tahun = new Date(timestamp).getFullYear().toString();
 
         await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
-            range: `Iuran_Lebaran!A${sheetRowNumber}:G${sheetRowNumber}`,
+            range: `Donasi_Lebaran!A${rowIndex + 1}:E${rowIndex + 1}`,
             valueInputOption: 'USER_ENTERED',
             requestBody: {
-                values: [[id, timestamp, tahun, namaKk, parsedJumlah, status, linkBukti || '']]
+                values: [[id, timestamp, tahun, keterangan, parsedJumlah]]
             }
         });
 
-        return NextResponse.json({ success: true, message: 'Data berhasil diupdate' });
+        return NextResponse.json({ success: true, message: 'Donasi berhasil diupdate' });
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -112,7 +134,7 @@ export async function DELETE(request: Request) {
         const sheets = getSheetsClient();
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Iuran_Lebaran!A:A',
+            range: 'Donasi_Lebaran!A:A',
         });
 
         const rows = response.data.values || [];
@@ -122,32 +144,27 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, error: 'Data not found' }, { status: 404 });
         }
 
-        const spreadsheet = await sheets.spreadsheets.get({
-            spreadsheetId: SPREADSHEET_ID,
-        });
-
-        const sheet = spreadsheet.data.sheets?.find(s => s.properties?.title === 'Iuran_Lebaran');
+        const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+        const sheet = spreadsheet.data.sheets?.find(s => s.properties?.title === 'Donasi_Lebaran');
         const sheetId = sheet?.properties?.sheetId || 0;
 
         await sheets.spreadsheets.batchUpdate({
             spreadsheetId: SPREADSHEET_ID,
             requestBody: {
-                requests: [
-                    {
-                        deleteDimension: {
-                            range: {
-                                sheetId: sheetId,
-                                dimension: 'ROWS',
-                                startIndex: rowIndex, // 0-indexed
-                                endIndex: rowIndex + 1
-                            }
+                requests: [{
+                    deleteDimension: {
+                        range: {
+                            sheetId,
+                            dimension: 'ROWS',
+                            startIndex: rowIndex,
+                            endIndex: rowIndex + 1,
                         }
                     }
-                ]
+                }]
             }
         });
 
-        return NextResponse.json({ success: true, message: 'Data berhasil dihapus' });
+        return NextResponse.json({ success: true, message: 'Donasi berhasil dihapus' });
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

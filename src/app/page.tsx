@@ -9,7 +9,9 @@ import IuranFormInline from '@/components/IuranFormInline';
 import NotulensiFormInline from '@/components/NotulensiFormInline';
 import PengeluaranForm from '@/components/PengeluaranForm';
 import PengeluaranTable from '@/components/PengeluaranTable';
-import { Camera, Download, Settings, RefreshCw, Sun, Moon, Filter, MinusCircle, FileText } from 'lucide-react';
+import DonasiForm from '@/components/DonasiForm';
+import DonasiTable, { Donasi } from '@/components/DonasiTable';
+import { Camera, Download, Settings, RefreshCw, Sun, Moon, Filter, MinusCircle, FileText, Heart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,12 +29,13 @@ const mockIuran: Iuran[] = [];
 const mockNotulensi: Notulensi[] = [];
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'iuran' | 'notulensi' | 'pengeluaran'>('iuran');
+  const [activeTab, setActiveTab] = useState<'iuran' | 'notulensi' | 'pengeluaran' | 'donasi'>('iuran');
   const [iuranView, setIuranView] = useState<'table' | 'checklist'>('checklist');
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [showIuranForm, setShowIuranForm] = useState(false);
   const [showNotulensiForm, setShowNotulensiForm] = useState(false);
   const [showPengeluaranForm, setShowPengeluaranForm] = useState(false);
+  const [showDonasiForm, setShowDonasiForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -42,6 +45,7 @@ export default function Dashboard() {
   const [iuranData, setIuranData] = useState<Iuran[]>([]);
   const [notulensiData, setNotulensiData] = useState<Notulensi[]>([]);
   const [pengeluaranData, setPengeluaranData] = useState<Pengeluaran[]>([]);
+  const [donasiData, setDonasiData] = useState<Donasi[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
 
@@ -60,10 +64,11 @@ export default function Dashboard() {
     setLoading(true);
     setApiError(false);
     try {
-      const [resIuran, resNotulensi, resPengeluaran] = await Promise.all([
+      const [resIuran, resNotulensi, resPengeluaran, resDonasi] = await Promise.all([
         fetch('/api/iuran').catch(() => null),
         fetch('/api/notulensi').catch(() => null),
-        fetch('/api/pengeluaran').catch(() => null)
+        fetch('/api/pengeluaran').catch(() => null),
+        fetch('/api/donasi').catch(() => null)
       ]);
 
       let successCount = 0;
@@ -81,6 +86,11 @@ export default function Dashboard() {
       if (resPengeluaran && resPengeluaran.ok) {
         const d = await resPengeluaran.json();
         if (d.success) { setPengeluaranData(d.data); successCount++; }
+      }
+
+      if (resDonasi && resDonasi.ok) {
+        const d = await resDonasi.json();
+        if (d.success) { setDonasiData(d.data); }
       }
 
       if (successCount < 3) {
@@ -103,6 +113,7 @@ export default function Dashboard() {
     setShowIuranForm(false);
     setShowNotulensiForm(false);
     setShowPengeluaranForm(false);
+    setShowDonasiForm(false);
     toast('Sesi Admin diakhiri', { icon: '👋' });
   };
 
@@ -281,6 +292,7 @@ export default function Dashboard() {
   const baseIuran = apiError || iuranData.length === 0 ? mockIuran : iuranData;
   const baseNotulensi = apiError || notulensiData.length === 0 ? mockNotulensi : notulensiData;
   const basePengeluaran = apiError ? [] : pengeluaranData;
+  const baseDonasi = apiError ? [] : donasiData;
 
   // Mendapatkan daftar tahun unik dari kedua data
   const availableYears = useMemo(() => {
@@ -288,8 +300,9 @@ export default function Dashboard() {
     baseIuran.forEach(item => years.add(item.tahun.substring(0, 4)));
     baseNotulensi.forEach(item => years.add(item.tahun.substring(0, 4)));
     basePengeluaran.forEach(item => years.add(item.tahun.substring(0, 4)));
-    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)); // urutkan descending
-  }, [baseIuran, baseNotulensi, basePengeluaran]);
+    baseDonasi.forEach(item => years.add(item.tahun.substring(0, 4)));
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [baseIuran, baseNotulensi, basePengeluaran, baseDonasi]);
 
   // Filter data berdasarkan tahun
   const displayIuran = useMemo(() => {
@@ -311,14 +324,21 @@ export default function Dashboard() {
     return basePengeluaran.filter(item => item.tahun.startsWith(selectedYear));
   }, [basePengeluaran, selectedYear]);
 
+  const displayDonasi = useMemo(() => {
+    if (selectedYear === 'Semua') return baseDonasi;
+    return baseDonasi.filter(item => item.tahun.startsWith(selectedYear));
+  }, [baseDonasi, selectedYear]);
+
   const totalPemasukan = displayIuran
     .filter(i => i.status === 'Lunas')
     .reduce((acc, curr) => acc + curr.jumlah, 0);
 
+  const totalDonasiMasuk = displayDonasi.reduce((acc, curr) => acc + curr.jumlah, 0);
+
   const totalPengeluaran = displayPengeluaran
     .reduce((acc, curr) => acc + curr.jumlah, 0);
 
-  const saldoAkhir = totalPemasukan - totalPengeluaran;
+  const saldoAkhir = (totalPemasukan + totalDonasiMasuk) - totalPengeluaran;
 
   const currentHost = selectedYear === 'Semua' 
     ? '-' 
@@ -376,7 +396,8 @@ export default function Dashboard() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
               <div>
-                <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>Pemasukan: Rp {totalPemasukan.toLocaleString('id-ID')}</div>
+                <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>Iuran Masuk: Rp {totalPemasukan.toLocaleString('id-ID')}</div>
+                <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>Donasi Masuk: Rp {totalDonasiMasuk.toLocaleString('id-ID')}</div>
                 <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>Pengeluaran: - Rp {totalPengeluaran.toLocaleString('id-ID')}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -416,6 +437,9 @@ export default function Dashboard() {
         </div>
         <div className={`tab ${activeTab === 'pengeluaran' ? 'active' : ''}`} onClick={() => setActiveTab('pengeluaran')}>
           💸 Daftar Pengeluaran
+        </div>
+        <div className={`tab ${activeTab === 'donasi' ? 'active' : ''}`} onClick={() => setActiveTab('donasi')}>
+          🤲 Catatan Donasi
         </div>
         <div className={`tab ${activeTab === 'notulensi' ? 'active' : ''}`} onClick={() => setActiveTab('notulensi')}>
           📸 Notulensi & Foto
@@ -516,6 +540,36 @@ export default function Dashboard() {
               <p className="text-center" style={{ padding: '2rem 0' }}>Memuat data Pengeluaran...</p>
             ) : (
               <PengeluaranTable data={displayPengeluaran} isAdmin={isAdmin} onRefresh={fetchData} />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'donasi' && (
+          <div className="fade-in">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-4">
+                <h2>Catatan Donasi Masuk</h2>
+                <button onClick={fetchData} className="btn" style={{ background: 'transparent', color: 'var(--muted)', padding: '0.4rem' }} title="Refresh Data">
+                  <RefreshCw size={16} className={loading ? 'spinning' : ''} />
+                </button>
+              </div>
+              {isAdmin && (
+                <button
+                  className={`btn ${showDonasiForm ? 'btn-secondary' : ''}`}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', color: showDonasiForm ? 'inherit' : '#f59e0b', borderColor: showDonasiForm ? '' : '#f59e0b' }}
+                  onClick={() => { setShowDonasiForm(!showDonasiForm); setShowPengeluaranForm(false); setShowIuranForm(false); }}
+                >
+                  {showDonasiForm ? 'Tutup Form' : <><Heart size={16} /> Catat Donasi</>}
+                </button>
+              )}
+            </div>
+
+            <DonasiForm isOpen={showDonasiForm} onSuccess={() => { setShowDonasiForm(false); fetchData(); }} />
+
+            {loading ? (
+              <p className="text-center" style={{ padding: '2rem 0' }}>Memuat data Donasi...</p>
+            ) : (
+              <DonasiTable data={displayDonasi} isAdmin={isAdmin} onRefresh={fetchData} />
             )}
           </div>
         )}

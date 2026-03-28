@@ -8,7 +8,6 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
     const [namaKk, setNamaKk] = useState('');
     const [tahun, setTahun] = useState(new Date().toISOString().split('T')[0]);
     const [jumlah, setJumlah] = useState('');
-    const [donasi, setDonasi] = useState('');
     const [status, setStatus] = useState<'Belum' | 'Lunas'>('Belum');
     const [linkBukti, setLinkBukti] = useState('');
     const [inputMode, setInputMode] = useState<'manual' | 'salin'>('manual');
@@ -25,7 +24,6 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
             setNamaKk('');
             setTahun(new Date().toISOString().split('T')[0]);
             setJumlah('');
-            setDonasi('');
             setStatus('Belum');
             setLinkBukti('');
         }
@@ -69,7 +67,6 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
                         namaKk,
                         tahun,
                         jumlah: parseInt(jumlah.replace(/[^0-9]/g, '')) || 0,
-                        donasi: parseInt(donasi.replace(/[^0-9]/g, '')) || 0,
                         status,
                         linkBukti
                     })
@@ -152,11 +149,6 @@ export default function IuranFormInline({ isOpen, onSuccess }: { isOpen: boolean
                         <div className="input-group" style={{ marginBottom: 0 }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Jumlah Iuran (Rp)</label>
                             <input type="number" className="input" placeholder="Contoh: 50000" value={jumlah} onChange={(e) => setJumlah(e.target.value)} required min="0" />
-                        </div>
-
-                        <div className="input-group" style={{ marginBottom: 0 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Jumlah Donasi (Rp)</label>
-                            <input type="number" className="input" placeholder="Opsi: 20000" value={donasi} onChange={(e) => setDonasi(e.target.value)} min="0" />
                         </div>
 
                         <div className="input-group" style={{ marginBottom: 0 }}>
