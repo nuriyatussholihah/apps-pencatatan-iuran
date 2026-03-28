@@ -178,11 +178,12 @@ export default function Dashboard() {
     
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Total Pemasukan: Rp ${totalPemasukan.toLocaleString('id-ID')}`, 14, 30);
-    doc.text(`Total Pengeluaran: Rp ${totalPengeluaran.toLocaleString('id-ID')}`, 14, 36);
-    doc.text(`Saldo Kas Kas Bersih: Rp ${saldoAkhir.toLocaleString('id-ID')}`, 14, 42);
+    doc.text(`Iuran Masuk: Rp ${totalPemasukan.toLocaleString('id-ID')}`, 14, 30);
+    doc.text(`Donasi Masuk: Rp ${totalDonasiMasuk.toLocaleString('id-ID')}`, 14, 36);
+    doc.text(`Total Pengeluaran: Rp ${totalPengeluaran.toLocaleString('id-ID')}`, 14, 42);
+    doc.text(`Saldo Kas Bersih: Rp ${saldoAkhir.toLocaleString('id-ID')}`, 14, 48);
 
-    let startY = 50;
+    let startY = 56;
 
     // 1. Iuran Table (List yang bayar)
     if (displayIuran.length > 0) {
@@ -230,7 +231,32 @@ export default function Dashboard() {
       startY = (doc as any).lastAutoTable.finalY + 15;
     }
 
-    // 3. Notulensi Table/List
+    // 3. Donasi Table
+    if (displayDonasi.length > 0) {
+      if (startY > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        startY = 20;
+      }
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Catatan Donasi Masuk", 14, startY);
+      autoTable(doc, {
+        startY: startY + 5,
+        head: [['No', 'Keterangan', 'Jumlah', 'Tanggal']],
+        body: displayDonasi.map((d, idx) => [
+          idx + 1,
+          d.keterangan,
+          `Rp ${d.jumlah.toLocaleString('id-ID')}`,
+          d.timestamp || d.tahun
+        ]),
+        theme: 'striped',
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [245, 158, 11] }
+      });
+      startY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // 4. Notulensi Table/List
     if (displayNotulensi.length > 0) {
       if (startY > doc.internal.pageSize.height - 40) {
         doc.addPage();
